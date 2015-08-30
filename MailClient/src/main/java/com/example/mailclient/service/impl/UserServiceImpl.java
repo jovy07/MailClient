@@ -5,26 +5,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+
 
 import javax.mail.MessagingException;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.transaction.Transaction;
 
-import net.sf.ehcache.hibernate.HibernateUtil;
-
-import org.hibernate.Hibernate;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.mailclient.model.User;
 import com.example.mailclient.repository.UserRepository;
 import com.example.mailclient.service.UserService;
-import com.mysql.jdbc.PreparedStatement;
+
 
 @Service
 public class UserServiceImpl implements UserService {

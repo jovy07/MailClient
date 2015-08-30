@@ -5,25 +5,25 @@ import java.util.HashMap;
 import java.util.Properties;
 
 import javax.mail.Address;
-import javax.mail.Authenticator;
+
 import javax.mail.BodyPart;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.NoSuchProviderException;
-import javax.mail.PasswordAuthentication;
+
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.URLName;
 import javax.mail.internet.MimeUtility;
 
-import org.apache.commons.lang.NullArgumentException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.mailclient.model.User;
 import com.example.mailclient.service.UserService;
+import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.pop3.POP3SSLStore;
 
 
@@ -36,24 +36,27 @@ public class MessageServiceReceiver {
 	
 	public HashMap<String, String> gmailServer(String host,final String username,final String password,String userLoginName) throws MessagingException, IOException{
 	
-		try{
-			  Properties properties = new Properties();
+		IMAPFolder emailFolder = null;
+        Store store = null;
 		
-			  properties.put("mail.imap.host", host);
-		      properties.put("mail.imap.port", "993");
-		     properties.put("mail.imap.starttls.enable", "true");
-		      Session emailSession = Session.getDefaultInstance(properties);
+		try{
+			  Properties properties =System.getProperties();
+			  properties.setProperty("mail.store.protocol", "imaps");
+			 // properties.put("mail.imaps.host", host);
+		     // properties.put("mail.imaps.port", "993");
+		    // properties.put("mail.imaps.starttls.enable", "true");
+		      Session emailSession = Session.getDefaultInstance(properties,null);
 		      
-		      Store store = emailSession.getStore("imaps");
+		       store = emailSession.getStore("imaps");
 		      store.connect(host, username, password);
-		    Folder [] f=store.getDefaultFolder().list();
-		   
-		      Folder emailFolder = store.getFolder("INBOX");
+		      
+		      emailFolder = (IMAPFolder) store.getFolder("INBOX");
 		      emailFolder.open(Folder.READ_ONLY);
 		     
 		      
 		      Message message=emailFolder.getMessage(emailFolder.getMessageCount());
 		      
+		      String decodedSubject=MimeUtility.decodeText(message.getSubject());
 
 		      Address [] in=message.getFrom();  
 		      
@@ -63,11 +66,14 @@ public class MessageServiceReceiver {
 		      for (Address address : in) {
 		    	  MimeUtility.decodeText(address.toString());
 		    	  adresa+=address.toString();
-		   
+		    	
 		      }
-		     
 		   
-		      adresa+=":"+message.getSubject()+"....";
+			   
+		      adresa+=":"+decodedSubject+"....";
+		      
+		      System.out.println("ADRESA");
+		      System.out.println(adresa);
 		      
 		      User user=userService.findUser(userLoginName);
 		      
@@ -140,19 +146,7 @@ public class MessageServiceReceiver {
 			    session=Session.getInstance(properties, null);
 			    store=new POP3SSLStore(session, url);
 			    store.connect();
-			/*  Properties properties = new Properties();
-				
-			  properties.put("mail.imap.host", host);
-		      properties.put("mail.imap.port", "993");
-		      properties.put("mail.imap.starttls.enable", "true");
-		      Session emailSession = Session.getDefaultInstance(properties);
-		      
-		      Store store = emailSession.getStore("imaps");
-		      store.connect(host, username, password);
-			    Folder [] f=store.getDefaultFolder().list();*/
-			  
-			   
-			  
+		
 			    Folder emailFolder=store.getFolder("INBOX");
 			    emailFolder.open(Folder.READ_ONLY);
 			      
@@ -166,9 +160,10 @@ public class MessageServiceReceiver {
 			      for (Address address : in) {
 			    	  adresa+=address.toString(); 
 		            }
-		      adresa+=":"+message.getSubject()+"....";
-			
+			    
 			      
+		      adresa+=":"+message.getSubject()+"....";
+    
 			      User user=userService.findUser(userLoginName);
 	      
 			    	  for(HashMap<String,String> messages:user.inbox){

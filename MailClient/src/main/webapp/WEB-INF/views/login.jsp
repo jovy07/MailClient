@@ -155,16 +155,15 @@
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password">
                    <div id="lower">
-                        <input type="checkbox"><label class="check" for="checkbox">Keep me logged in</label>
-   
-                        	  <input type="submit" value="Sign in">
+                  
+        	      	  <input type="submit" value="Sign in">
                   
                     </div><!--/ lower-->
          
                 </form>
                 <form action="signup" method="get">
                       	 <div id="subButton">
-                        <input type="submit" value="Sign up" />
+          		            <input type="submit" value="Sign up" />
                         </div>
                       </form>
             </div><!--/ container-->

@@ -28,7 +28,6 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 		String name=authentication.getName();
 		String password=authentication.getCredentials().toString();
 		
-		
 		String nameToMatch=userService.findUser(name).getUsername();
 		String passwordToMatch=userService.findUser(name).getPassword();
 		
