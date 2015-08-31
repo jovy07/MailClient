@@ -68,7 +68,7 @@
     }		
 	
 	#allEmails{
-		margin-top: 20px;
+		margin-top: 50px;
 	}
 	
 	#mailOptions{
@@ -127,7 +127,6 @@
         <div id="menuRows">
            <table>
                  <tr><td><form action="https://localhost:8443/mail-client/inbox" method="get"><input type="submit" value="Inbox" id="menuButtons"/></form></td></tr>
-               <tr><td><form action="junk"><input type="submit" value="Junk" id="menuButtons" /></form></td></tr>
                <tr><td><form action="https://localhost:8443/mail-client/sent"><input type="submit" value="Sent" id="menuButtons" /></form></td></tr>
                <tr><td><form action="https://localhost:8443/mail-client/deleted"><input type="submit" value="Deleted" id="menuButtons" /></form></td></tr>
                <tr>

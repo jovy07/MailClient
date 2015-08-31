@@ -164,7 +164,6 @@
         <div id="menuRows">
            <table>
                  <tr><td><form action="inbox" method="get"><input type="submit" value="Inbox" id="menuButtons"/></form></td></tr>
-               <tr><td><form action="junk"><input type="submit" value="Junk" id="menuButtons" /></form></td></tr>
                <tr><td><form action="sent"><input type="submit" value="Sent" id="menuButtons" /></form></td></tr>
                <tr><td><form action="deleted"><input type="submit" value="Deleted" id="menuButtons" /></form></td></tr>
                <tr>

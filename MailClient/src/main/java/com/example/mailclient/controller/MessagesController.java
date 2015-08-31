@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.example.mailclient.auth.CustomAuthenticationProvider;
@@ -23,6 +24,7 @@ import com.example.mailclient.service.impl.HostServerElection;
 import com.example.mailclient.service.impl.MessageService;
 import com.example.mailclient.service.impl.MessageServiceReceiver;
 import com.example.mailclient.service.impl.UserVerification;
+import com.google.gson.Gson;
 
 @Controller
 public class MessagesController {
@@ -61,76 +63,7 @@ public class MessagesController {
 
 	private User user;
 	
-	@RequestMapping(value = "homepage/newmail")
-	public ModelAndView sendMail(HttpSession session) {
-		Map<String, Object> model = new HashMap<String, Object>();
-		String username = (String) session.getAttribute("username");
-		emails = userService.getEmails(username);
-		model.put("mails", emails);
-
-		return new ModelAndView("send_email", model);
-	}
-
-	@RequestMapping(value = "homepage/sendmail", method = { RequestMethod.POST }, params = {
-			"sender", "recipient" })
-	public ModelAndView sendEmailtoReceiver(
-			@RequestParam(value = "sender") String sender,
-			@RequestParam(value = "recipient") String recipient,
-			@RequestParam String subject, @RequestParam String msg,
-			HttpSession session) {
-
-		String keyRecipient = "";
-		keyRecipient += recipient.replaceAll(",", ".") + ":" + subject + "....";
-		sentMessagesEmails.put(keyRecipient, msg);
-
-		String username = (String) session.getAttribute("username");
-
-		userService.saveToSent(username, sentMessagesEmails);
-
-		String senderDot = sender.replaceAll(",", ".");
-		String recipientDot = recipient.replaceAll(",", ".");
-		String password = "";
-
-		User user= userService.findUser(username);
-		
-		for (String key : user.mailList.keySet()) {
-			
-			if (senderDot.matches(key)) {
-
-				password = user.mailList.get(key);
-			}
-		}
-
-		if (senderDot.contains("live") || senderDot.contains("hotmail")) {
-			msgService
-					.sendLive(recipientDot, senderDot, password, subject, msg);
-		} else {
-			msgService.sendGmail(recipientDot, senderDot, password, subject,
-					msg);
-		}
-		Map<String, Object> model = new HashMap<String, Object>();
-		model.put("mails", emails);
-		User userNew = userService.findUser(username);
-		content = userNew.inbox;
-		Collections.reverse(content);
-		model.put("message", content);
-		return new ModelAndView("user_page", model);
-	}
-
-	@RequestMapping(value = "homepage/sendmail", method = RequestMethod.GET, params = {
-			"sender", "recipient" })
-	public ModelAndView sendEmailtoReceiverGetMethod(
-			@RequestParam(value = "sender") String sender,
-			@RequestParam(value = "recipient") String recipient,HttpSession session) {
-		Map<String, Object> model = new HashMap<String, Object>();
-		String username=(String) session.getAttribute("username");
-		User userNew = userService.findUser(username);
-		content = userNew.inbox;
-		Collections.reverse(content);
-		model.put("mails", emails);
-		model.put("message", content);
-		return new ModelAndView("user_page", model);
-	}
+	
 
 	@RequestMapping(value = "/sent", method = RequestMethod.GET)
 	public ModelAndView sentPage(HttpSession session) {
@@ -139,9 +72,12 @@ public class MessagesController {
 		String username = (String) session.getAttribute("username");
 		User userNew = userService.findUser(username);
 		sentMessages = userNew.sent;
+		emails = userService.getEmails(username);
 		Collections.reverse(sentMessages);
 		model.put("message", sentMessages);
 		model.put("mails", emails);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("sent_page", model);
 	}
 
@@ -152,9 +88,12 @@ public class MessagesController {
 		String username = (String) session.getAttribute("username");
 		User userNew = userService.findUser(username);
 		sentMessages = userNew.sent;
+		emails = userService.getEmails(username);
 		Collections.reverse(sentMessages);
 		model.put("message", sentMessages);
 		model.put("mails", emails);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("sent_page", model);
 	}
 
@@ -183,9 +122,11 @@ public class MessagesController {
 				}
 			}
 		}
-
+		emails = userService.getEmails(username);
 		model.put("mails", emails);
 		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("sentbox_item", model);
 
 	}
@@ -200,7 +141,7 @@ public class MessagesController {
 		User userNew = userService.findUser(username);
 
 		sentMessages = userNew.sent;
-
+		emails = userService.getEmails(username);
 		for (HashMap<String, String> messages : sentMessages) {
 
 			for (String key : messages.keySet()) {
@@ -217,6 +158,8 @@ public class MessagesController {
 
 		model.put("mails", emails);
 		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("sentbox_item", model);
 
 	}
@@ -229,9 +172,7 @@ public class MessagesController {
 
 		String username = (String) session.getAttribute("username");
 		User userNew = userService.findUser(username);
-		
-		System.out.println("MSG ITEM");
-		System.out.println(msgItem);
+	
 		content = userNew.inbox;
 
 		for (HashMap<String, String> messages : content) {
@@ -247,9 +188,12 @@ public class MessagesController {
 				}
 			}
 		}
+		emails = userService.getEmails(username);
 
 		model.put("mails", emails);
 		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("message_item", model);
 
 	}
@@ -278,12 +222,96 @@ public class MessagesController {
 				}
 			}
 		}
-
+		emails = userService.getEmails(username);
 		model.put("mails", emails);
 		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("message_item", model);
 
 	}
 	
+
+	@RequestMapping(value="/deleted")
+	public ModelAndView deleteFolder(HttpSession session){
+		String username=(String) session.getAttribute("username");
+		Map<String, Object> model = new HashMap<String, Object>();
+		User newUser=userService.findUser(username);
+		Collections.reverse(newUser.deleted);
+		emails = userService.getEmails(username);
+		model.put("mails", emails);
+		model.put("message",newUser.deleted );
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
+		return new ModelAndView("delete_folder",model);
+	}
+	
+	@RequestMapping(value = "deletedbox/{msgItem}")
+	public ModelAndView deletedBoxPage(@PathVariable String msgItem,
+			HttpSession session) {
+
+		Map<String, Object> model = new HashMap<String, Object>();
+		String msgValue = "";
+
+		String username = (String) session.getAttribute("username");
+		User userNew = userService.findUser(username);
+
+		content = userNew.deleted;
+		
+
+		for (HashMap<String, String> messages : content) {
+
+			for (String key : messages.keySet()) {
+
+				String formattedKey = key.substring(0, key.length() - 1);
+
+				if (formattedKey.matches(msgItem)) {
+
+					msgValue = messages.get(key);
+
+				}
+			}
+		}
+		emails = userService.getEmails(username);
+		model.put("mails", emails);
+		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
+		return new ModelAndView("message_item", model);
+
+	}
+	@RequestMapping(value = "homepage/deletedbox/{msgItem}")
+	public ModelAndView deletedBoxPageHomePage(@PathVariable String msgItem,
+			HttpSession session) {
+
+		Map<String, Object> model = new HashMap<String, Object>();
+		String msgValue = "";
+
+		String username = (String) session.getAttribute("username");
+		User userNew = userService.findUser(username);
+
+		content = userNew.deleted;
+
+		for (HashMap<String, String> messages : content) {
+
+			for (String key : messages.keySet()) {
+
+				String formattedKey = key.substring(0, key.length() - 1);
+
+				if (formattedKey.matches(msgItem)) {
+
+					msgValue = messages.get(key);
+
+				}
+			}
+		}
+		emails = userService.getEmails(username);
+		model.put("mails", emails);
+		model.put("msgValue", msgValue);
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
+		return new ModelAndView("message_item", model);
+
+	}
 
 }

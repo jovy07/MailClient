@@ -1,19 +1,24 @@
 package com.example.mailclient.controller;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.example.mailclient.auth.CustomAuthenticationProvider;
@@ -24,6 +29,7 @@ import com.example.mailclient.service.impl.HostServerElection;
 import com.example.mailclient.service.impl.MessageService;
 import com.example.mailclient.service.impl.MessageServiceReceiver;
 import com.example.mailclient.service.impl.UserVerification;
+import com.google.gson.Gson;
 
 
 @Controller
@@ -64,6 +70,87 @@ public class HomePageController {
 	private User user;
 	
 	
+	@RequestMapping(value = "/homepage", method = RequestMethod.POST)
+	public ModelAndView userPage(@RequestParam String username,
+			@RequestParam String password, HttpSession session)
+			throws MessagingException, IOException {
+
+		if (username.length() == 0 || password.length() == 0) {
+			return new ModelAndView("redirect:/loginfailed");
+		
+		}
+		try {
+			Authentication auth = customAuthProvider
+					.authenticate(new UsernamePasswordAuthenticationToken(
+							username, password));
+			user = userService.findUser(auth.getName());
+
+			if (user == null) {
+			
+				return new ModelAndView("redirect:/loginfailed");
+			
+			}
+			session.setAttribute("user", user);
+			session.setAttribute("username", auth.getName());
+					
+
+			Map<String, Object> model = new HashMap<String, Object>();
+
+			userService.refreshServer(username);
+			
+
+			User userNew = userService.findUser(username);
+			sentMessages = userNew.sent;
+			content = userNew.inbox;
+			Collections.reverse(content);
+			Collections.reverse(sentMessages);
+
+			emails = userService.getEmails(username);
+			model.put("mails", emails);
+			model.put("message", content);
+
+			//String jsonString=new Gson().toJson(model).toString();
+			
+			return new ModelAndView("user_page", model);
+			//return jsonString;
+		} catch (NullPointerException nex) {
+		
+			return new ModelAndView("redirect:/loginfailed");
+		
+		}
+
+	}
+	@RequestMapping(value = "/homepage", method = RequestMethod.GET)
+	public ModelAndView getUserPage(HttpSession session)
+			throws MessagingException, IOException {
+		if (session.getAttribute("username") != null) {
+
+			String username = (String) session.getAttribute("username");
+
+			Map<String, Object> model = new HashMap<String, Object>();
+			User userNew = userService.findUser(username);
+		
+			content = userNew.inbox;
+			Collections.reverse(content);
+			model.put("message", content);
+
+			emails = userService.getEmails(username);
+
+			model.put("mails", emails);
+
+			//String jsonString=new Gson().toJson(model).toString();
+			//return jsonString;
+			return new ModelAndView("user_page", model);
+		}
+
+		if (session.getAttribute("username") == null) {
+			return new ModelAndView("redirect:/loginfailed");
+		}
+
+		return null;
+
+	}
+	
 
 	@RequestMapping(value = "/inbox", method = RequestMethod.GET)
 	public ModelAndView inboxPage(HttpSession session) {
@@ -76,6 +163,9 @@ public class HomePageController {
 		Collections.reverse(content);
 		model.put("message", content);
 		model.put("mails", emails);
+
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("user_page", model);
 	}
 
@@ -90,165 +180,10 @@ public class HomePageController {
 		Collections.reverse(content);
 		model.put("message", content);
 		model.put("mails", emails);
+
+		//String jsonString=new Gson().toJson(model).toString();
+		//return jsonString;
 		return new ModelAndView("user_page", model);
 	}
 
-	
-	@RequestMapping(value = "/filtermessages", method = RequestMethod.POST)
-	public ModelAndView filterMessages(@RequestParam String mailChecked,
-			HttpSession session) {
-
-		String username = (String) session.getAttribute("username");
-		User userNew = userService.findUser(username);
-
-		filterMessages = userNew.filteredMails;
-		ArrayList<HashMap<String, String>> filterMessagesList = new ArrayList<HashMap<String, String>>();
-
-		HashMap<String, String> finalFilterMessage = new HashMap<String, String>();
-
-		ArrayList<String> matchedKeys = new ArrayList<String>();
-
-		for (String key : filterMessages.keySet()) {
-
-			if (mailChecked.matches(key)) {
-
-				matchedKeys.add(filterMessages.get(key));
-
-			}
-		}
-
-		for (String key : matchedKeys) {
-
-			for (HashMap<String, String> messages : userNew.inbox) {
-
-				for (String keyToMatch : messages.keySet()) {
-
-					if (key.matches(keyToMatch)) {
-						finalFilterMessage.put(key, messages.get(key));
-						filterMessagesList.add(finalFilterMessage);
-					}
-
-				}
-			}
-		}
-		session.setAttribute("mailChecked", mailChecked);
-		session.setAttribute("filteredMessage", filterMessagesList);
-
-		Map<String, Object> model = new HashMap<String, Object>();
-		emails = userService.getEmails(username);
-		model.put("filteredMail", mailChecked);
-		model.put("mails", emails);
-		model.put("message", filterMessagesList);
-		return new ModelAndView("filter_message_page", model);
-	}
-
-	@RequestMapping(value = "/filtermessages", method = RequestMethod.GET)
-	public ModelAndView filterMessagesGetMethod(HttpSession session) {
-
-		String username = (String) session.getAttribute("username");
-		String mailChecked = (String) session.getAttribute("mailChecked");
-		ArrayList<HashMap<String, String>> filterMessagesList = (ArrayList<HashMap<String, String>>) session
-				.getAttribute("filteredMessage");
-
-		Map<String, Object> model = new HashMap<String, Object>();
-		emails = userService.getEmails(username);
-		model.put("filteredMail", mailChecked);
-		model.put("mails", emails);
-		model.put("message", filterMessagesList);
-		return new ModelAndView("filter_message_page", model);
-	}
-
-	@RequestMapping(value="/deletemessage",method=RequestMethod.POST)
-	public ModelAndView deleteMessages(@RequestParam String msgToDelete,HttpSession session){
-		
-		String username=(String) session.getAttribute("username");
-		Map<String, Object> model = new HashMap<String, Object>();
-		emails = userService.getEmails(username);
-		model.put("mails", emails);
-		userService.deleteMessage(username, msgToDelete);
-		
-		User newUser=userService.findUser(username);
-		content=newUser.inbox;
-		Collections.reverse(content);
-		model.put("message", content);
-		return new ModelAndView("user_page",model);
-	}
-	
-	@RequestMapping(value="/deleted")
-	public ModelAndView deleteFolder(HttpSession session){
-		String username=(String) session.getAttribute("username");
-		Map<String, Object> model = new HashMap<String, Object>();
-		User newUser=userService.findUser(username);
-		Collections.reverse(newUser.deleted);
-		emails = userService.getEmails(username);
-		model.put("mails", emails);
-		model.put("message",newUser.deleted );
-		return new ModelAndView("delete_folder",model);
-	}
-	@RequestMapping(value = "deletedbox/{msgItem}")
-	public ModelAndView deletedBoxPage(@PathVariable String msgItem,
-			HttpSession session) {
-
-		Map<String, Object> model = new HashMap<String, Object>();
-		String msgValue = "";
-
-		String username = (String) session.getAttribute("username");
-		User userNew = userService.findUser(username);
-
-		content = userNew.deleted;
-		
-
-		for (HashMap<String, String> messages : content) {
-
-			for (String key : messages.keySet()) {
-
-				String formattedKey = key.substring(0, key.length() - 1);
-
-				if (formattedKey.matches(msgItem)) {
-
-					msgValue = messages.get(key);
-
-				}
-			}
-		}
-
-		model.put("mails", emails);
-		model.put("msgValue", msgValue);
-		return new ModelAndView("message_item", model);
-
-	}
-	@RequestMapping(value = "homepage/deletedbox/{msgItem}")
-	public ModelAndView deletedBoxPageHomePage(@PathVariable String msgItem,
-			HttpSession session) {
-
-		Map<String, Object> model = new HashMap<String, Object>();
-		String msgValue = "";
-
-		String username = (String) session.getAttribute("username");
-		User userNew = userService.findUser(username);
-
-		content = userNew.deleted;
-
-		for (HashMap<String, String> messages : content) {
-
-			for (String key : messages.keySet()) {
-
-				String formattedKey = key.substring(0, key.length() - 1);
-
-				if (formattedKey.matches(msgItem)) {
-
-					msgValue = messages.get(key);
-
-				}
-			}
-		}
-
-		model.put("mails", emails);
-		model.put("msgValue", msgValue);
-		return new ModelAndView("message_item", model);
-
-	}
-
-
-	
 }
