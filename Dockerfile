@@ -1,1 +1,1 @@
-FROM jovy07/mailclient
+FROM jovanstojanov/mailclient
